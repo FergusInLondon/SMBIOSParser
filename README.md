@@ -67,94 +67,94 @@ The below example comes from a work in progress by [@perfaram](https://github.co
 
 If using Mac OS X and Objective-C, a nicer implementation could be done using an alternative data structure - an ```NSMutableDictionary``` - as opposed to the internal Linked List found in this parser.
 
+```c
+#include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#import <Foundation/Foundation.h>
 
-    #include <stdint.h>
-    #include <stddef.h>
-    #include <stdlib.h>
-    #include <string.h>
-    #import <Foundation/Foundation.h>
+#import "smbios_header.h"
 
-    #import "smbios_header.h"
+int main(int argc, const char * argv[]) {
 
-    int main(int argc, const char * argv[]) {
+	mach_port_t 					myMasterPort;
+	CFMutableDictionaryRef			myMatchingDictionary;
+	kern_return_t					result;
+	io_object_t						foundService;
+	
+	IOMasterPort(MACH_PORT_NULL, &myMasterPort);
+	
+	myMatchingDictionary = IOServiceMatching("AppleSMBIOS");
+	foundService = IOServiceGetMatchingService( myMasterPort, myMatchingDictionary );
+	
+	IOMasterPort(MACH_PORT_NULL, &myMasterPort);
+	
+	myMatchingDictionary = IOServiceMatching("AppleSMBIOS");
+	foundService = IOServiceGetMatchingService( myMasterPort, myMatchingDictionary );
+	if (foundService == 0) {
+		printf("No \"AppleSMBIOS\" IOService in IORegistry");
+		return false;
+	}
+	
+	CFMutableDictionaryRef	properties	= NULL;
+	CFDataRef				smbiosdata;
+	
+	result = IORegistryEntryCreateCFProperties( foundService,
+											   &properties,
+											   kCFAllocatorDefault,
+											   kNilOptions );
+	if (result != kIOReturnSuccess) {
+		printf("No data in \"AppleSMBIOS\" IOService");
+		return false;
+	}
+	
+	result = CFDictionaryGetValueIfPresent( properties,
+										   CFSTR("SMBIOS"),
+										   (const void **)&smbiosdata );
+	if (result != true) {
+		printf("No \"SMBIOS\" property in \"AppleSMBIOS\" IOService");
+		return false;
+	}
+	
+	/*
+	** BEGIN SMBIOS PARSING; Parser functionality ->
+	*/
+	
+	
+	// Parse the SMBIOS values
+	smbios_parse((const char *)smbiosdata, (size_t)CFDataGetLength(smbiosdata));
 
-        mach_port_t 					myMasterPort;
-        CFMutableDictionaryRef        	myMatchingDictionary;
-        kern_return_t					result;
-        io_object_t                   	foundService;
-        
-        IOMasterPort(MACH_PORT_NULL, &myMasterPort);
-        
-        myMatchingDictionary = IOServiceMatching("AppleSMBIOS");
-        foundService = IOServiceGetMatchingService( myMasterPort, myMatchingDictionary );
-        
-        IOMasterPort(MACH_PORT_NULL, &myMasterPort);
-        
-        myMatchingDictionary = IOServiceMatching("AppleSMBIOS");
-        foundService = IOServiceGetMatchingService( myMasterPort, myMatchingDictionary );
-        if (foundService == 0) {
-            printf("No \"AppleSMBIOS\" IOService in IORegistry");
-            return false;
-        }
-        
-        CFMutableDictionaryRef    properties    = NULL;
-        CFDataRef                 smbiosdata;
-        
-        result = IORegistryEntryCreateCFProperties( foundService,
-                                                   &properties,
-                                                   kCFAllocatorDefault,
-                                                   kNilOptions );
-        if (result != kIOReturnSuccess) {
-            printf("No data in \"AppleSMBIOS\" IOService");
-            return false;
-        }
-        
-        result = CFDictionaryGetValueIfPresent( properties,
-                                               CFSTR("SMBIOS"),
-                                               (const void **)&smbiosdata );
-        if (result != true) {
-            printf("No \"SMBIOS\" property in \"AppleSMBIOS\" IOService");
-            return false;
-        }
-        
-        /*
-        ** BEGIN SMBIOS PARSING; Parser functionality ->
-        */
-        
-        
-        // Parse the SMBIOS values
-        smbios_parse((const char *)smbiosdata, (size_t)CFDataGetLength(smbiosdata));
+	// Iterate through all the retrieved values
+	while( smbios_iterate() ){
+		printf("Type: %i\t Address: %p\n", smbios_current_type(), smbios_current_structure());
+		
+		// Check the current type; if it's a mem device...
+		if( smbios_current_type() == smbios_type_memory_device ){
+			// Then retrieve that region of memory in to a struct
+			struct mem_device *values = smbios_current_structure();
+			printf("Memory Device Serial Number: %hhu", values->serial_number);
+		}
+	}
+	smbios_iterate_reset();
 
-        // Iterate through all the retrieved values
-        while( smbios_iterate() ){
-            printf("Type: %i\t Address: %p\n", smbios_current_type(), smbios_current_structure());
-            
-            // Check the current type; if it's a mem device...
-            if( smbios_current_type() == smbios_type_memory_device ){
-                // Then retrieve that region of memory in to a struct
-                struct mem_device *values = smbios_current_structure();
-                printf("Memory Device Serial Number: %hhu", values->serial_number);
-            }
-        }
-        smbios_iterate_reset();
+	
+	// Alternatively, without the iterator, we can grab specific values:
+	struct proc_info *pInfo;
+	smbios_extract_values(smbios_type_processor_info, pInfo);
+	
+	// Although, always check any returned pointers - don't assume they're GOOD
+	if( pInfo != NULL){
+		printf("Socket Description: %hhu\n", pInfo->socket_designation);
+	}
+	
+	// Clear up and free that mem.
+	smbios_clear();
 
-        
-        // Alternatively, without the iterator, we can grab specific values:
-        struct proc_info *pInfo;
-        smbios_extract_values(smbios_type_processor_info, pInfo);
-        
-        // Although, always check any returned pointers - don't assume they're GOOD
-        if( pInfo != NULL){
-            printf("Socket Description: %hhu\n", pInfo->socket_designation);
-        }
-        
-        // Clear up and free that mem.
-        smbios_clear();
-
-        
-        /*
-        ** END SMBIOS PARSING; End of Parser functionality
-        */
-        
-        return 0;
-    }
+	
+	/*
+	** END SMBIOS PARSING; End of Parser functionality
+	*/
+	
+	return 0;
+}```
