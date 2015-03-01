@@ -1,6 +1,6 @@
 ## A Pure C SMBIOS Parser
 
-This is a simple parser for SMBIOS written in C. It's built upon the work done in C++ by [ZipFile](https://github.com/ZipFile) available at this [repo](https://github.com/ZipFile/smbios); I've removed the C++ specific features (i.e Vectors, struct inheritence..) and simplified it somewhat, as well as bolting on a bit of a simple iterator.
+This is a simple parser for SMBIOS written in C. It's built upon the work done in C++ by [@ZipFile](https://github.com/ZipFile) available at this [repo](https://github.com/ZipFile/smbios); I've removed the C++ specific features (i.e Vectors, struct inheritence..) and simplified it somewhat, as well as bolting on a bit of a simple iterator.
 
 **Still very much a work in progress; i.e it compiles but how well it works is anyones guess; I need to do some further work on this.**
 
@@ -63,7 +63,7 @@ Returns a pointer to a structure containing the values associated with the curre
 
 Here's an example of how this code could be used for SMBIOS parsing, for Mac OS X. 
 
-The below example comes from []() - with the exception of the calls to ```smbios_*``` functions.
+The below example comes from a work in progress by [@perfaram](https://github.com/perfaram/) - with the exception of the calls to ```smbios_*``` functions.
 
 If using Mac OS X and Objective-C, a nicer implementation could be done using an alternative data structure - an ```NSMutableDictionary``` - as opposed to the internal Linked List found in this parser.
 
