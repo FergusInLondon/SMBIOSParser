@@ -87,11 +87,7 @@ int main(int argc, const char * argv[]) {
 	
 	myMatchingDictionary = IOServiceMatching("AppleSMBIOS");
 	foundService = IOServiceGetMatchingService( myMasterPort, myMatchingDictionary );
-	
-	IOMasterPort(MACH_PORT_NULL, &myMasterPort);
-	
-	myMatchingDictionary = IOServiceMatching("AppleSMBIOS");
-	foundService = IOServiceGetMatchingService( myMasterPort, myMatchingDictionary );
+
 	if (foundService == 0) {
 		printf("No \"AppleSMBIOS\" IOService in IORegistry");
 		return false;
