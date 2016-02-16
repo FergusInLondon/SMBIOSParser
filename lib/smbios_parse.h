@@ -53,11 +53,3 @@ SMBByte smbios_current_type();
 void	*smbios_current_structure();
 int		smbios_iterate();
 void	smbios_iterate_reset();
-
-
-
-
-
-
-
-
