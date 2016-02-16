@@ -2,54 +2,62 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include "smbios.h"
 
-typedef uint8_t   byte_t;
-typedef uint16_t  word_t;
-typedef uint32_t dword_t;
-typedef uint64_t qword_t;
+// Linked List Element
+typedef struct SMBValue {
+	struct SMBValue*	next;
+	SMBStructHeader*	header;
+	void*				structure;
+} SMBValue;
 
-typedef byte_t str_id;
-typedef byte_t enum_t;
-
-#include "smbios_structures.h"
-
-// We implement an internal Linked List after parsing
-//  the SMBIOS table.
-typedef struct Entry {
-	struct Entry* next;
-	struct header* header;
-} Entry;
+// Internals (make static after refactor.)
+SMBByte		*smbios_raw_data;
+size_t		smbios_raw_size;
+SMBValue 	*smbios_first;
+SMBValue 	*smbios_current_entry;
 
 
-
-
-/*
- * Internal properties
- */
-byte_t *smbios_raw_data;
-size_t	smbios_raw_size;
-Entry *smbios_first;
-Entry *smbios_current_entry;
-
-
-
-/*
- * Function Prototypes
- */
-
-
-void smbios_skip(byte_t **x);
-
-struct header* smbios_extract_values(byte_t type, void *ptr);
+//
+// Parsing functions; parses the SMBIOS data and generates
+//  a linked list containing header & structure pointers.
+//
+// Status:
+//  The parser code is.. ermm.. interesting.
 
 void smbios_parse(const void *raw_smbios, size_t size);
-
+void smbios_skip(SMBByte **x);
 void smbios_clear();
 
-byte_t smbios_current_type();
 
-void* smbios_current_structure();
+//
+// Search function, returns a pointer to the header entry
+//  and modifies *ptr to point directly to the entry.
+//
+// Status:
+//  Works by iterating through all of the entries, this could
+//   be avoided by using some form of look-up table.
 
-int smbios_iterate();
+SMBValue* smbios_search(SMBByte type);
 
-void smbios_iterate_reset();
+
+//
+// Iterator Methods
+//  Parser exposes an iterator API for accessing all parsed
+//   entries.
+// Status:
+//  Needs to be cleaned, but as it simply traverses a linked
+//   list, I can't see it being too hairy.
+
+SMBByte smbios_current_type();
+void	*smbios_current_structure();
+int		smbios_iterate();
+void	smbios_iterate_reset();
+
+
+
+
+
+
+
+

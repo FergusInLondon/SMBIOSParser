@@ -5,9 +5,9 @@
 
 #include "smbios_parse.h"
 
-void smbios_skip(byte_t **x) {
+void smbios_skip(SMBByte **x) {
 	// Offset length of header
-	*x += ((struct header *) x)->length;
+	*x += ((SMBStructHeader *) x)->length;
 	size_t len = 0;
 	
 	// If value at ptr is 0, then offset by 2 and return,
@@ -21,54 +21,43 @@ void smbios_skip(byte_t **x) {
 }
 
 
-struct header* smbios_extract_values(byte_t type, void *ptr) {
-	ptr = NULL;
-	
-	// Find the header for the requested type;
-	struct Entry *entry = smbios_first;
+SMBValue* smbios_search(SMBByte type) {
+	SMBValue *entry = smbios_first;
 	while(entry->next != NULL){
-		if(entry->header->type == type) break;
-		entry = entry->next;
+		if (entry->header->type == type) {
+			return entry;
+		}
 	}
-	
-	// If it wasn't found, dump out a NULL pointer;
-	//  Leave checking to the user application!
-	if(entry->header->type != type){
-		return ptr;
-	}
-	
-	// Offset pointer beyond the header, to the region of
-	//  memory containing the values
-	ptr = ((byte_t *) entry->header) + entry->header->length;
-	return (struct header *) ptr;
+
+	return (SMBValue *)NULL;
 }
 
 
 void smbios_parse(const void *raw_smbios, size_t size) {
-	byte_t *x;
+	SMBByte *x;
 	
 	smbios_raw_size = size;
 	smbios_raw_data = malloc( smbios_raw_size );
 	memcpy(smbios_raw_data, raw_smbios, smbios_raw_size);
 	
 	// Potential mem leak here if smbios_first has already been init.
-	smbios_first = malloc( sizeof(Entry) );
+	smbios_first = malloc( sizeof(SMBValue) );
 	smbios_current_entry = smbios_first;
 
 	x = smbios_raw_data;
-	Entry *prev = NULL;
+	SMBValue *prev = NULL;
 	while( (size_t)(x - smbios_raw_data) < smbios_raw_size ) {
 		if( prev == NULL ){
 			// First Run
-			smbios_first->header = (struct header *)x;
+			smbios_first->header = (SMBStructHeader *)x;
 			prev = smbios_first;
 			continue;
 		}
 		
 		// Ahoy. Potential Memory Leak Here. Please see
 		//  clear()!
-		Entry *e = malloc( sizeof(Entry) );
-		e->header = (struct header *)x;
+		SMBValue *e = malloc( sizeof(SMBValue) );
+		e->header = (SMBStructHeader *)x;
 		prev->next = e;
 		
 		prev = e;
@@ -79,7 +68,7 @@ void smbios_parse(const void *raw_smbios, size_t size) {
 
 void smbios_clear() {
 	// Delete all Entry instances
-	Entry *entry = smbios_first;
+	SMBValue *entry = smbios_first;
 	while( entry->next != NULL ){
 		entry = entry->next;
 		free(entry);
@@ -91,13 +80,13 @@ void smbios_clear() {
 };
 
 
-byte_t smbios_current_type(){
+SMBByte smbios_current_type(){
 	return smbios_current_entry->header->type;
 }
 
 
 void* smbios_current_structure(){
-	return ((byte_t *) smbios_current_entry->header) + smbios_current_entry->header->length;
+	return ((SMBByte *) smbios_current_entry->header) + smbios_current_entry->header->length;
 }
 
 
