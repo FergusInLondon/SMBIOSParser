@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "smbios.h"
 
 // Linked List Element
@@ -45,11 +46,8 @@ SMBValue* smbios_search(SMBByte type);
 // Iterator Methods
 //  Parser exposes an iterator API for accessing all parsed
 //   entries.
-// Status:
-//  Needs to be cleaned, but as it simply traverses a linked
-//   list, I can't see it being too hairy.
 
-SMBByte smbios_current_type();
-void	*smbios_current_structure();
-int		smbios_iterate();
-void	smbios_iterate_reset();
+bool				smbios_iterate();
+void				smbios_iterate_reset();
+SMBByte				smbios_current_type();
+SMBStructHeader*	smbios_current_structure();
