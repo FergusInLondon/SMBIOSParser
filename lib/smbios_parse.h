@@ -7,15 +7,15 @@
 // Linked List Element
 typedef struct SMBValue {
 	struct SMBValue*	next;
-	SMBStructHeader*	header;
-	void*				structure;
+	SMBStructHeader*	structure;
 } SMBValue;
 
 // Internals (make static after refactor.)
-SMBByte		*smbios_raw_data;
-size_t		smbios_raw_size;
+SMBByte		*smbios_dup_data;
 SMBValue 	*smbios_first;
 SMBValue 	*smbios_current_entry;
+size_t		smbios_raw_size;
+uint8_t		smbios_counter;
 
 
 //
@@ -26,8 +26,8 @@ SMBValue 	*smbios_current_entry;
 //  The parser code is.. ermm.. interesting.
 
 void smbios_parse(const void *raw_smbios, size_t size);
-void smbios_skip(SMBByte **x);
-void smbios_clear();
+void smbios_fastforward(SMBByte **cursor);
+void smbios_destroy();
 
 
 //

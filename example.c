@@ -48,6 +48,8 @@ void print_smbios_entry(struct SMBEntryPoint* e){
 	printf("Version information:\n");
 	printf("\t- Major Version: %d\n", e->majorVersion);
 	printf("\t- Minor Version: %d\n", e->minorVersion);
+	printf("\t- Entry Point Length: %d\n", e->entryPointLength);
+	printf("\t- Max Structure Size: %d\n\n", e->maxStructureSize);
 }
 
 void print_smbios_data(SMBByte* data, size_t len){
@@ -63,5 +65,5 @@ void print_smbios_data(SMBByte* data, size_t len){
 	}
 	
 	// Clear up and free that mem.
-	smbios_clear();
+	smbios_destroy();
 }

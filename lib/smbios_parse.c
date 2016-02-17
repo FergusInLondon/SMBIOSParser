@@ -1,30 +1,9 @@
-#include <stdint.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "smbios_parse.h"
-
-void smbios_skip(SMBByte **x) {
-	// Offset length of header
-	*x += ((SMBStructHeader *) x)->length;
-	size_t len = 0;
-	
-	// If value at ptr is 0, then offset by 2 and return,
-	//  else, get the length of the region in memory untl
-	//  a null byte is encountered, add that to
-	if (**x == 0) x += 2;
-	else do {
-		len  = strlen((const char *) x);
-		*x += len + 1;
-	} while(len > 0);
-}
-
 
 SMBValue* smbios_search(SMBByte type) {
 	SMBValue *entry = smbios_first;
-	while(entry->next != NULL){
-		if (entry->header->type == type) {
+	while (entry->next != NULL) {
+		if (entry->structure->type == type) {
 			return entry;
 		}
 	}
@@ -32,68 +11,86 @@ SMBValue* smbios_search(SMBByte type) {
 	return (SMBValue *)NULL;
 }
 
+void smbios_fastforward(SMBByte **cursor) {
+	// If value at ptr is 0, then offset by 2 and return,
+	//  else, get the length of the region in memory untl
+	//  a null byte is encountered, add that to
+	if (**cursor == 0) cursor += 2;
+	else do {
+		len  = strlen((const char *) cursor);
+		*cursor += len + 1;
+	} while(len > 0);
+}
 
 void smbios_parse(const void *raw_smbios, size_t size) {
-	SMBByte *x;
-	
-	smbios_raw_size = size;
-	smbios_raw_data = malloc( smbios_raw_size );
-	memcpy(smbios_raw_data, raw_smbios, smbios_raw_size);
-	
+
+	// Duplicate SMBIOS structure - potentially not required
+	smbios_dup_data = malloc(size);
+	memcpy(smbios_dup_data, raw_smbios, size);
+
 	// Potential mem leak here if smbios_first has already been init.
-	smbios_first = malloc( sizeof(SMBValue) );
+	smbios_counter = 0;
+	if (smbios_first != NULL) free(smbios_first);
+	smbios_first = malloc(sizeof(SMBValue));
 	smbios_current_entry = smbios_first;
 
-	x = smbios_raw_data;
-	SMBValue *prev = NULL;
-	while( (size_t)(x - smbios_raw_data) < smbios_raw_size ) {
-		if( prev == NULL ){
-			// First Run
-			smbios_first->header = (SMBStructHeader *)x;
-			prev = smbios_first;
-			continue;
-		}
-		
-		// Ahoy. Potential Memory Leak Here. Please see
-		//  clear()!
-		SMBValue *e = malloc( sizeof(SMBValue) );
-		e->header = (SMBStructHeader *)x;
+	// Create first SMBValue entry
+	SMBByte *cursor = smbios_dup_data;
+	SMBValue *prev = malloc(sizeof(SMBValue));
+	prev->structure = (SMBStructHeader *)smbios_dup_data;
+	smbios_counter = 1;
+
+	// Skip strings and null bytes
+	cursor += (size_t)prev->structure->length;
+	smbios_fastforward(&cursor);
+
+	// Iterate and repeat through the rest of the table entries
+	while (cursor < (smbios_dup_data + size)) {
+		SMBStructHeader *head = (SMBStructHeader *)cursor;
+
+		// Create new SMBValue element + initialise values
+		SMBValue *e = malloc(sizeof(SMBValue));
+		e->structure = head;
 		prev->next = e;
-		
 		prev = e;
-		smbios_skip(&x);
+
+		cursor += (size_t)prev->structure->length;;
+
+		smbios_fastforward(&cursor);
+		smbios_counter++;
 	}
 }
 
 
-void smbios_clear() {
+void smbios_destroy() {
 	// Delete all Entry instances
 	SMBValue *entry = smbios_first;
-	while( entry->next != NULL ){
+	while (entry->next != NULL) {
+		// How the hell was this ever meant to work?
 		entry = entry->next;
 		free(entry);
 	}
 	
 	// Reset raw data
-	free(smbios_raw_data);
+	free(smbios_dup_data);
 	smbios_raw_size = 0;
 };
 
 
 SMBByte smbios_current_type(){
-	return smbios_current_entry->header->type;
+	return smbios_current_entry->structure->type;
 }
 
 
 void* smbios_current_structure(){
-	return ((SMBByte *) smbios_current_entry->header) + smbios_current_entry->header->length;
+	return ((SMBByte *) smbios_current_entry->structure) + smbios_current_entry->structure->length;
 }
 
 
 int smbios_iterate(){
 	int ret = 0;
 	
-	if( smbios_current_entry->next != NULL ){
+	if (smbios_current_entry->next != NULL) {
 		smbios_current_entry = smbios_current_entry->next;
 		ret = 1;
 	} else {
