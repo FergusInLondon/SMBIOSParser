@@ -10,4 +10,4 @@ cc -Wall -g -c example.c -o example.o
 cc -g -o example example.o -L. -lsmbios-parse  -framework IOKit -framework CoreFoundation
 
 # Do some cleaning up
-rm example.o libsmbios-parse.a lib/libsmbios-parse.o
+# rm example.o libsmbios-parse.a lib/libsmbios-parse.o
