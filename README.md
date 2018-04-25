@@ -1,3 +1,6 @@
+# This is ARCHIVED and NO LONGER MAINTAINED.
+---
+
 ## A Pure C SMBIOS Parser
 
 This is a simple parser for SMBIOS written in C. It's built upon the work done in C++ by [@ZipFile](https://github.com/ZipFile) available at this [repo](https://github.com/ZipFile/smbios); I've removed the C++ specific features (i.e Vectors, struct inheritence..) and simplified it somewhat, as well as bolting on a bit of a simple iterator.
